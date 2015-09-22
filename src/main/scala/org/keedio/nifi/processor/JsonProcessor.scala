@@ -9,12 +9,15 @@ import org.apache.nifi.annotation.documentation.{CapabilityDescription, Tags}
 import org.apache.nifi.components.PropertyDescriptor
 import org.apache.nifi.flowfile.FlowFile
 import org.apache.nifi.logging.ProcessorLog
+import org.apache.nifi.processor.Relationship.Builder
 import org.apache.nifi.processor._
 import org.apache.nifi.processor.exception.ProcessException
 import org.apache.nifi.processor.io.{InputStreamCallback, OutputStreamCallback}
 import org.apache.nifi.processor.util.StandardValidators
 
-import scala.collection.immutable.HashSet
+import scala.collection.JavaConverters._
+import scala.collection.immutable.{HashSet, Set}
+
 
 
 /**
@@ -23,12 +26,12 @@ import scala.collection.immutable.HashSet
  * Keedio
  */
 
-@Tags("Json", "JsonProcessor")
+@Tags(Array("JSON", "Keedio mola"))
 @CapabilityDescription("Fetch value from json path")
 class JsonProcessor extends AbstractProcessor {
 
     private val properties: List[PropertyDescriptor] = Nil
-    private val relationships: HashSet[Relationship] = HashSet.empty
+    private val relationships: Set[Relationship] = HashSet.empty
 
     /**
      * Function init called at the start of Apache Nifi
@@ -54,20 +57,18 @@ class JsonProcessor extends AbstractProcessor {
             @throws(classOf[IOException])
             override def process(inputStream: InputStream): Unit = {
                 try {
-                    val json = IOUtils.toString(inputStream)
-                    val result = JsonPath.read(json, "$.hello")
+                    val json: String = IOUtils.toString(inputStream)
+                    val result = JsonPath.read[String](json, "$.hola")
                     value.set(result)
+
                 } catch {
                     case ex: IOException => ex.printStackTrace()
                         log.error("Failed to read json string")
                 }
             }
         })
-        val results: String = value.get()
-        results.nonEmpty && results.isInstanceOf[NotNull] match {
-            case true => flowFile = session.putAttribute(flowFile, "match", results)
-            case false => println("error")
-        }
+       val results: String = value.get()
+      if (results != null  && !results.isEmpty)  flowFile = session.putAttribute(flowFile, "match", results)
 
         flowFile = session.write(flowFile, new OutputStreamCallback {
             @throws(classOf[IOException])
@@ -78,20 +79,25 @@ class JsonProcessor extends AbstractProcessor {
 
     }
 
-    override def getRelationships(): HashSet[Relationship] = relationships
+    override def getRelationships():java.util.Set[Relationship] = {
+        relationships.asJava
+    }
 
-    override def getSupportedPropertyDescriptors(): List[PropertyDescriptor] = properties
+    override def getSupportedPropertyDescriptors(): java.util.List[PropertyDescriptor] = properties.asJava
 }
 
 object JsonProcessor {
     final val MATCH_ATTR: String = "match"
-    final val JSON_PATH: PropertyDescriptor = new org.apache.nifi.components.PropertyDescriptor.Builder.type
+    final val propertyBuilder: org.apache.nifi.components.PropertyDescriptor.Builder = new PropertyDescriptor.Builder
+    final val JSON_PATH: PropertyDescriptor = propertyBuilder
         .name("Json Path")
         .required(true)
         .addValidator(StandardValidators.NON_EMPTY_VALIDATOR)
         .build()
 
-    final val SUCCESS: Relationship = new org.apache.nifi.processor.Relationship.Builder.type
+
+    final val relationshipBuilder: Builder = new org.apache.nifi.processor.Relationship.Builder
+    final val SUCCESS: Relationship = relationshipBuilder
         .name("SUCCESS")
         .description("Success relationship")
         .build()
