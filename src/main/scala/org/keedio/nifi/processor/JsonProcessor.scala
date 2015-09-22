@@ -16,7 +16,7 @@ import org.apache.nifi.processor.io.{InputStreamCallback, OutputStreamCallback}
 import org.apache.nifi.processor.util.StandardValidators
 
 import scala.collection.JavaConverters._
-import scala.collection.immutable.{HashSet, Set}
+import scala.collection.mutable.{ListBuffer, HashSet, Set}
 
 
 
@@ -30,7 +30,7 @@ import scala.collection.immutable.{HashSet, Set}
 @CapabilityDescription("Fetch value from json path")
 class JsonProcessor extends AbstractProcessor {
 
-    private val properties: List[PropertyDescriptor] = Nil
+    private val properties: ListBuffer[PropertyDescriptor] = ListBuffer.empty
     private val relationships: Set[Relationship] = HashSet.empty
 
     /**
@@ -38,8 +38,11 @@ class JsonProcessor extends AbstractProcessor {
      * @param context
      */
     override def init(context: ProcessorInitializationContext): Unit = {
-        JsonProcessor.JSON_PATH :: properties
-        relationships.+(JsonProcessor.SUCCESS)
+        JsonProcessor.JSON_PATH +=: properties
+        properties.toList
+        relationships += JsonProcessor.SUCCESS
+        properties.toSet
+
     }
 
     /**
