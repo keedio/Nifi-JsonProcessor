@@ -4,8 +4,9 @@ import java.io.{ByteArrayInputStream, InputStream}
 
 import org.apache.commons.io.IOUtils
 import org.apache.nifi.util.{MockFlowFile, TestRunner, TestRunners}
-import org.junit.{Ignore, Test}
 import org.junit.Assert.assertTrue
+import org.junit.Test
+
 import scala.collection.JavaConverters._
 import scala.collection.mutable
 
@@ -14,14 +15,13 @@ import scala.collection.mutable
  * lalazaro@keedio.com
  * Keedio
  */
-@Ignore
+
 class JsonProcessorTest {
 
     @Test
     def testOnTrigger(): Unit  = {
         val content: InputStream = new ByteArrayInputStream("{\"hola\":\"keedio mola\"}".getBytes())
-        val a = new JsonProcessor
-        val runner: TestRunner = TestRunners.newTestRunner(a)
+        val runner: TestRunner = TestRunners.newTestRunner(new JsonProcessor)
         runner.setProperty(JsonProcessor.JSON_PATH, "$.hola")
         runner.enqueue(content)
         runner.run(1)
@@ -34,7 +34,7 @@ class JsonProcessorTest {
         val resultValue = new String(runner.getContentAsByteArray(result))
         println("Match: " + IOUtils.toString(runner.getContentAsByteArray(result)))
 
-        result.assertAttributeEquals(JsonProcessor.MATCH_ATTR, "Keedio mola")
-        result.assertContentEquals("Keedio mola")
+        result.assertAttributeEquals(JsonProcessor.MATCH_ATTR, "keedio mola")
+        result.assertContentEquals("keedio mola")
     }
 }
